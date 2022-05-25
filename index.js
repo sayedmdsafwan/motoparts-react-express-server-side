@@ -203,6 +203,14 @@ async function run() {
             res.send(users);
         });
 
+        // delete a user | only admin can do this
+        app.delete("/user/:email", verifyJWT, verifyAdmin, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const result = await userCollection.deleteOne(filter);
+            res.send(result);
+        });
+
         // sending products by post method
         app.post("/product", verifyJWT, verifyAdmin, async (req, res) => {
             const product = req.body;
