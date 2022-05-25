@@ -61,6 +61,13 @@ async function run() {
             res.send(result);
         });
 
+        app.delete("/tool/:id", verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await toolCollection.deleteOne(filter);
+            res.send(result);
+        });
+
         // get single item
         // http://localhost:4000/tool/628c70f85367abcfc6535402
         app.get("/tool/:id", async (req, res) => {
