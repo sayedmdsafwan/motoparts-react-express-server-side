@@ -40,6 +40,9 @@ async function run() {
             .db("motoparts_bd")
             .collection("bookings");
         const userCollection = client.db("motoparts_bd").collection("users");
+        const productCollection = client
+            .db("motoparts_bd")
+            .collection("products");
 
         // get all items
         // http://localhost:4000/tools
@@ -143,6 +146,13 @@ async function run() {
         app.get("/user", verifyJWT, async (req, res) => {
             const users = await userCollection.find().toArray();
             res.send(users);
+        });
+
+        // sending products by post method
+        app.post("/product", async (req, res) => {
+            const product = req.body;
+            const result = await toolCollection.insertOne(product);
+            res.send(result);
         });
     } finally {
     }
