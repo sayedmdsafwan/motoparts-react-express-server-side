@@ -90,6 +90,13 @@ async function run() {
             }
         });
 
+        app.get("/booking/:id", verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const booking = await bookingCollection.findOne(query);
+            res.send(booking);
+        });
+
         // post || get user info and booking details
         app.post("/booking", async (req, res) => {
             const booking = req.body;
