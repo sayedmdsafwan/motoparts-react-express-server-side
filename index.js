@@ -5,6 +5,7 @@ require("dotenv").config();
 const port = process.env.PORT || 4000;
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // middleware
 app.use(cors());
@@ -40,6 +41,9 @@ async function run() {
             .db("motoparts_bd")
             .collection("bookings");
         const userCollection = client.db("motoparts_bd").collection("users");
+        const paymentCollection = client
+            .db("motoparts_bd")
+            .collection("payments");
 
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
@@ -66,6 +70,37 @@ async function run() {
             const filter = { _id: ObjectId(id) };
             const result = await toolCollection.deleteOne(filter);
             res.send(result);
+        });
+
+        //payment
+        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+            const service = req.body;
+            const price = service.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ["card"],
+            });
+            res.send({ clientSecret: paymentIntent.client_secret });
+        });
+
+        app.patch("/booking/:id", verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = { _id: ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId,
+                },
+            };
+            const result = await paymentCollection.insertOne(payment);
+            const updatedBooking = await bookingCollection.updateOne(
+                filter,
+                updatedDoc
+            );
+            res.send(updatedBooking);
         });
 
         // get single item
