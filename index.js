@@ -40,9 +40,18 @@ async function run() {
             .db("motoparts_bd")
             .collection("bookings");
         const userCollection = client.db("motoparts_bd").collection("users");
-        const productCollection = client
-            .db("motoparts_bd")
-            .collection("products");
+
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({
+                email: requester,
+            });
+            if (requesterAccount.role === "admin") {
+                next();
+            } else {
+                res.status(403).send({ message: "forbidden" });
+            }
+        };
 
         // get all items
         // http://localhost:4000/tools
@@ -99,13 +108,12 @@ async function run() {
         });
 
         // make admin
-        app.put("/user/admin/:email", verifyJWT, async (req, res) => {
-            const email = req.params.email;
-            const requester = req.decoded.email;
-            const requesterAccount = await userCollection.findOne({
-                email: requester,
-            });
-            if (requesterAccount.role === "admin") {
+        app.put(
+            "/user/admin/:email",
+            verifyJWT,
+            verifyAdmin,
+            async (req, res) => {
+                const email = req.params.email;
                 const filter = { email: email };
                 const updateDoc = {
                     $set: { role: "admin" },
@@ -115,10 +123,8 @@ async function run() {
                     updateDoc
                 );
                 res.send(result);
-            } else {
-                res.status(403).send({ message: "forbidden" });
             }
-        });
+        );
 
         // post user by email || put method
         app.put("/user/:email", async (req, res) => {
@@ -149,7 +155,7 @@ async function run() {
         });
 
         // sending products by post method
-        app.post("/product", async (req, res) => {
+        app.post("/product", verifyJWT, verifyAdmin, async (req, res) => {
             const product = req.body;
             const result = await toolCollection.insertOne(product);
             res.send(result);
