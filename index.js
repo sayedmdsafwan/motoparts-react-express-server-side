@@ -41,6 +41,9 @@ async function run() {
             .db("motoparts_bd")
             .collection("bookings");
         const userCollection = client.db("motoparts_bd").collection("users");
+        const reviewCollection = client
+            .db("motoparts_bd")
+            .collection("reviews");
         const paymentCollection = client
             .db("motoparts_bd")
             .collection("payments");
@@ -216,6 +219,19 @@ async function run() {
             const product = req.body;
             const result = await toolCollection.insertOne(product);
             res.send(result);
+        });
+
+        // sending review by post method
+        app.post("/review", verifyJWT, async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(result);
+        });
+
+        // getting reviews from buyers
+        app.get("/reviews", async (req, res) => {
+            const reviews = await reviewCollection.find().toArray();
+            res.send(reviews);
         });
     } finally {
     }
